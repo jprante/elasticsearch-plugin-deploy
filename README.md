@@ -18,7 +18,7 @@ Example:
         "path" : "http://example.org/elasticsearch-plugin-demo-1.4.0.0.zip"
     }'
 
-in case of success, the answer of the server looks like this
+In case of success, the answer of the server looks like this
 
     {"nodes":[{"name":"Melee","success":true}],"deployed":true}
 
@@ -28,7 +28,7 @@ services of the old one are stopped and the new plugin replaces the old one.
 Deployed plugins are stored under the deploy plugins' directory in the Elasticsearch plugins folder.
 
 If URLs are to be used in `path` for remote access, the URL domain has to be configured beforehand
-in Elasticsearch node settings in a list of permitted domains.
+in Elasticsearch settings by a list of permitted domains.
 
     plugins.deploy.domains:
         - foo.com
