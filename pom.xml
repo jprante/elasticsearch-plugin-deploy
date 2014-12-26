@@ -44,6 +44,26 @@
         <url>https://github.com/jprante/elasticsearch-plugin-deploy/issues</url>
     </issueManagement>
 
+    <distributionManagement>
+        <repository>
+            <id>xbib.org</id>
+            <url>scpexe://xbib.org/repository</url>
+        </repository>
+    </distributionManagement>
+
+    <repositories>
+        <repository>
+            <id>xbib</id>
+            <url>http://xbib.org/repository</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <properties>
         <github.global.server>github</github.global.server>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -93,22 +113,13 @@
     </dependencies>
 
     <build>
-        <resources>
-            <resource>
-                <directory>${basedir}/src/main/resources</directory>
-                <filtering>true</filtering>
-                <includes>
-                    <include>es-plugin.properties</include>
-                </includes>
-            </resource>
-            <resource>
-                <directory>${basedir}/src/main/resources</directory>
-                <filtering>false</filtering>
-                <excludes>
-                    <exclude>es-plugin.properties</exclude>
-                </excludes>
-            </resource>
-        </resources>
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-ssh-external</artifactId>
+                <version>2.6</version>
+            </extension>
+        </extensions>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -212,7 +223,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-site-plugin</artifactId>
-                <version>3.3</version>
+                <version>3.4</version>
                 <configuration>
                     <locales>en</locales>
                     <inputEncoding>UTF-8</inputEncoding>
@@ -222,7 +233,7 @@
             <plugin>
                 <groupId>com.github.github</groupId>
                 <artifactId>site-maven-plugin</artifactId>
-                <version>0.9</version>
+                <version>0.10</version>
                 <configuration>
                     <message>Building site for ${project.version}</message>
                 </configuration>
