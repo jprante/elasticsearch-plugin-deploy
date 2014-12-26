@@ -4,8 +4,7 @@ Image by [Wikimedia](http://commons.wikimedia.org/wiki/File:Reload_icon.svg)
 
 # Deploy plugin for Elasticsearch
 
-With this plugin, refreshable Elasticsearch plugins can be installed.
-This is convenient for managing plugins without restarting nodes.
+With this plugin, Elasticsearch plugins can be installed on all nodes, without restarting them.
 
 Example:
 
@@ -23,8 +22,8 @@ in case of success, the answer of the server looks like this
 
     {"nodes":[{"name":"Melee","success":true}],"deployed":true}
 
-If a deploy is repeated, the services of an existing plugin with the same name are stopped
-and the new plugin replaces the old one.
+If a deploy is repeated, the existing plugin with the same name is refreshed: the
+services of the old one are stopped and the new plugin replaces the old one.
 
 Deployed plugins are stored under the deploy plugins' directory in the Elasticsearch plugins folder.
 
