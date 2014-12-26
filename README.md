@@ -58,6 +58,8 @@ Use at your own risk!
 
 ## Installation
 
+Prerequisite is Elasticsearch running under Java 8.
+
     ./bin/plugin --install deploy --url http://xbib.org/repository/org/xbib/elasticsearch/plugin/elasticsearch-plugin-deploy/1.4.0.0/elasticsearch-plugin-deploy-1.4.0.0-plugin.zip
 
 ## Project docs
