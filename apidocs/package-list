@@ -1,0 +1,8 @@
+org.xbib.classloader
+org.xbib.classloader.directory
+org.xbib.classloader.jar
+org.xbib.classloader.uri
+org.xbib.elasticsearch.action.deploy
+org.xbib.elasticsearch.module.deploy
+org.xbib.elasticsearch.plugin.deploy
+org.xbib.elasticsearch.rest.deploy
