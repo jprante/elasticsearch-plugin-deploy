@@ -15,7 +15,9 @@
  */
 package org.xbib.elasticsearch.rest.deploy;
 
+import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentHelper;
@@ -45,6 +47,7 @@ public class RestDeployAction extends BaseRestHandler {
         this.client = client;
         controller.registerHandler(RestRequest.Method.GET, "/_deploy", new Get());
         controller.registerHandler(RestRequest.Method.POST, "/_deploy", new Post());
+        controller.registerHandler(RestRequest.Method.PUT, "/_deploy", new Put());
     }
 
     @Override
@@ -83,6 +86,38 @@ public class RestDeployAction extends BaseRestHandler {
                 DeployRequestBuilder deployRequestBuilder = new DeployRequestBuilder(client.admin().cluster())
                         .setName(name)
                         .setPath(settings, path);
+                final DeployRequest deployRequest = deployRequestBuilder.request();
+                client.admin().cluster().execute(DeployAction.INSTANCE, deployRequest,
+                        new RestToXContentListener<DeployResponse>(channel));
+            } catch (Throwable ex) {
+                logger.error(ex.getMessage(), ex);
+                try {
+                    channel.sendResponse(new BytesRestResponse(channel, ex));
+                } catch (IOException ex2) {
+                    logger.error(ex2.getMessage(), ex2);
+                    channel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR));
+                }
+            }
+        }
+    }
+
+    class Put implements RestHandler {
+        @Override
+        public void handleRequest(final RestRequest request, final RestChannel channel) {
+            try {
+                String name = request.param("name");
+                if (name == null) {
+                    throw new ElasticsearchIllegalArgumentException("no name given");
+                }
+                BytesReference content =  request.content();
+                String contentType = request.header("Accept");
+                if (contentType == null) {
+                    contentType = "application/zip"; // assume zip by default, for unpacking
+                }
+                DeployRequestBuilder deployRequestBuilder = new DeployRequestBuilder(client.admin().cluster())
+                        .setName(name)
+                        .setContentType(contentType)
+                        .setContent(content);
                 final DeployRequest deployRequest = deployRequestBuilder.request();
                 client.admin().cluster().execute(DeployAction.INSTANCE, deployRequest,
                         new RestToXContentListener<DeployResponse>(channel));

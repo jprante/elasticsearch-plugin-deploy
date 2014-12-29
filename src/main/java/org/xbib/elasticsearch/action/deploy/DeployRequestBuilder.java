@@ -18,6 +18,7 @@ package org.xbib.elasticsearch.action.deploy;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.support.nodes.NodesOperationRequestBuilder;
 import org.elasticsearch.client.ClusterAdminClient;
+import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
 
 import java.io.IOException;
@@ -45,6 +46,16 @@ public class DeployRequestBuilder extends NodesOperationRequestBuilder<DeployReq
 
     public DeployRequestBuilder setPath(Settings settings, String path) throws IOException {
         request.setPath(settings, path);
+        return this;
+    }
+
+    public DeployRequestBuilder setContent(BytesReference content) {
+        request.setContent(content);
+        return this;
+    }
+
+    public DeployRequestBuilder setContentType(String contentType) {
+        request.setContentType(contentType);
         return this;
     }
 

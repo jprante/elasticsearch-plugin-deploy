@@ -112,11 +112,16 @@ public class TransportDeployAction extends TransportNodesOperationAction<DeployR
         }
         String path = request.getRequest().getPath();
         if (path == null) {
-            throw new ElasticsearchException("no path given");
+            path = name;
         }
-        BytesReference ref = request.getRequest().getBytes();
-        if (ref == null || ref.length() == 0) {
-            throw new ElasticsearchException("no bytes in request");
+        // add .zip suffix if appropriate
+        String contentType = request.getRequest().getContentType();
+        if ("application/zip".equals(contentType)) {
+            path = path + ".zip";
+        }
+        BytesReference content = request.getRequest().getContent();
+        if (content == null || content.length() == 0) {
+            throw new ElasticsearchException("no content in request");
         }
         File dir = new File(environment.pluginsFile(),
                 DeployPlugin.NAME + File.separator + "plugins" + File.separator + name);
@@ -127,7 +132,7 @@ public class TransportDeployAction extends TransportNodesOperationAction<DeployR
             File target = new File(dir, new File(path).getName());
             logger.info("target is {}", target.getAbsolutePath());
             FileOutputStream out = new FileOutputStream(target);
-            Streams.copy(ref.streamInput(), out);
+            Streams.copy(content.streamInput(), out);
             out.close();
             logger.info("received {} bytes", target.length());
             deployService.add(name, target.getAbsoluteFile());

@@ -6,7 +6,7 @@ Image by [Wikimedia](http://commons.wikimedia.org/wiki/File:Reload_icon.svg)
 
 With this plugin, Elasticsearch plugins can be installed on all nodes, without restarting them.
 
-Example:
+Examples:
 
     curl -XPOST 'localhost:9200/_deploy' -d '{
         "name" : "test",
@@ -17,6 +17,8 @@ Example:
         "name" : "demo",
         "path" : "http://example.org/elasticsearch-plugin-demo-1.4.0.0.zip"
     }'
+
+    curl -XPUT '0:9200/_deploy?name=library' -H 'Accept: application/zip' --data-binary @/Users/joerg/Projects/github/xbib/elasticsearch-plugin-library-api/build/distributions/elasticsearch-plugin-library-api-1.4.0.0-plugin.zip
 
 In case of success, the answer of the server looks like this
 
@@ -51,15 +53,16 @@ Use at your own risk!
 
 ## Versions
 
-| Release date | Plugin version | Elasticsearch version |
-| -------------| ---------------| ----------------------|
-| Dec 26, 2014 | 1.4.0.0        | 1.4.0                 |
+| Release date | Deploy plugin  | Elasticsearch |
+| -------------| ---------------| --------------|
+| Dec 29, 2014 | 1.4.0.1        | 1.4.0         |
+| Dec 26, 2014 | 1.4.0.0        | 1.4.0         |
 
 ## Installation
 
-Prerequisite is Elasticsearch running under Java 8.
+Prerequisite is Elasticsearch running under Java 8 JVM.
 
-    ./bin/plugin --install deploy --url http://xbib.org/repository/org/xbib/elasticsearch/plugin/elasticsearch-plugin-deploy/1.4.0.0/elasticsearch-plugin-deploy-1.4.0.0-plugin.zip
+    ./bin/plugin --install deploy --url http://xbib.org/repository/org/xbib/elasticsearch/plugin/elasticsearch-plugin-deploy/1.4.0.1/elasticsearch-plugin-deploy-1.4.0.1-plugin.zip
 
 ## Project docs
 

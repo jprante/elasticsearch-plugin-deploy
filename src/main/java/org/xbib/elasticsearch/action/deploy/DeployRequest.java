@@ -40,7 +40,9 @@ public class DeployRequest extends NodesOperationRequest<DeployRequest> {
 
     private String path;
 
-    private BytesReference ref;
+    private BytesReference content;
+
+    private String contentType;
 
     private boolean read;
 
@@ -105,8 +107,8 @@ public class DeployRequest extends NodesOperationRequest<DeployRequest> {
         Streams.copy(in, out);
         in.close();
         out.close();
-        this.ref = out.bytes();
-        logger.debug("ref length = {}", ref.length());
+        this.content = out.bytes();
+        logger.debug("content length = {}", content.length());
         return this;
     }
 
@@ -114,8 +116,22 @@ public class DeployRequest extends NodesOperationRequest<DeployRequest> {
         return path;
     }
 
-    public BytesReference getBytes() {
-        return ref;
+    public DeployRequest setContentType(String contentType) {
+        this.contentType = contentType;
+        return this;
+    }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public DeployRequest setContent(BytesReference content) {
+        this.content = content;
+        return this;
+    }
+
+    public BytesReference getContent() {
+        return content;
     }
 
     @Override
@@ -124,7 +140,7 @@ public class DeployRequest extends NodesOperationRequest<DeployRequest> {
         this.read = in.readBoolean();
         this.name = in.readString();
         this.path = in.readString();
-        this.ref = in.readBytesReference();
+        this.content = in.readBytesReference();
     }
 
     @Override
@@ -133,13 +149,13 @@ public class DeployRequest extends NodesOperationRequest<DeployRequest> {
         if (name == null) {
             throw new IOException("no name was given for deploy request");
         }
-        if (ref == null) {
+        if (content == null) {
             throw new IOException("no valid path was given for deploy request");
         }
         out.writeBoolean(read);
         out.writeString(name);
         out.writeString(path);
-        out.writeBytesReference(ref);
+        out.writeBytesReference(content);
     }
 
 }
