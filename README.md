@@ -62,7 +62,7 @@ Use at your own risk!
 
 Prerequisite is Elasticsearch running under Java 8 JVM.
 
-    ./bin/plugin --install deploy --url http://xbib.org/repository/org/xbib/elasticsearch/plugin/elasticsearch-plugin-deploy/1.4.0.1/elasticsearch-plugin-deploy-1.4.0.1-plugin.zip
+    ./bin/plugin --install deploy --url http://xbib.org/repository/org/xbib/elasticsearch/plugin/elasticsearch-plugin-deploy/1.4.0.1/elasticsearch-plugin-deploy-1.4.0.1.zip
 
 ## Project docs
 
