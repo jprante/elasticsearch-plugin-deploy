@@ -7,7 +7,7 @@
 
     <groupId>org.xbib.elasticsearch.plugin</groupId>
     <artifactId>elasticsearch-plugin-deploy</artifactId>
-    <version>1.4.0.1</version>
+    <version>1.4.2</version>
     <packaging>jar</packaging>
 
     <name>elasticsearch-plugin-deploy</name>
@@ -68,7 +68,7 @@
         <github.global.server>github</github.global.server>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.compiler.version>1.8</java.compiler.version>
-        <elasticsearch.version>1.4.0</elasticsearch.version>
+        <elasticsearch.version>1.4.2</elasticsearch.version>
     </properties>
 
     <dependencies>
