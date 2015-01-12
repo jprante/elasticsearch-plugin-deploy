@@ -274,7 +274,7 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
                 jars.addAll(findJars(f.getAbsoluteFile()));
             } else {
                 if (f.getName().endsWith(".jar")) {
-                    jars.add(URI.create("file:" + f.getAbsolutePath()));
+                    jars.add(f.toURI());
                 }
             }
         }
