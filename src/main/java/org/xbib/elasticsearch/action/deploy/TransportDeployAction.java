@@ -129,6 +129,8 @@ public class TransportDeployAction extends TransportNodesOperationAction<DeployR
             if (!dir.mkdirs()) {
                 logger.warn("unable to make directories: {}", dir.getAbsolutePath());
             }
+            // clear directory from previous files
+            dir.delete();
             File target = new File(dir, new File(path).getName());
             logger.info("target is {}", target.getAbsolutePath());
             FileOutputStream out = new FileOutputStream(target);
