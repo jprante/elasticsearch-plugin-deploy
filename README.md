@@ -68,19 +68,19 @@ But, most of existing plugins do the latter, so it can not be expected they work
 
 How can plugins be redeployed when most features are baked into ES?
 
-The deploy plugin solves the re-deploy problem by doing the following
+The deploy plugin solves the redeploy problem by doing the following
 
 - at deploy time, it looks for the service(s) of a deployable plugin, and invokes the start method
 - and at redeploy time, the stop method of the service of a deployed plugin is executed before the start method is executed again
 
-So, the deply plugin realizes a resource life cycle.
+So, the deploy plugin realizes a resource life cycle, controlled by RESTful actions.
 
 A special interface `org.xbib.elasticsearch.module.deploy.DeployableComponent`
 adds another interesting feature that a deployable plugin can be initialized by seeing the classpath it is running under
 and the jar of the plugin where the file `es-plugin.properties` was stored. This allows for example
 to create a zipfs file system on the plugin jar for resource retrieval.
 
-It is up each deployable plugin to release any resources that would hinder reusage, e.g.
+It is up to each deployable plugin to release any resources that would hinder reusage, e.g.
 closing open ports.
 
 The deploy plugin does not care about or tweak the core ES services, they are not manipulated.
