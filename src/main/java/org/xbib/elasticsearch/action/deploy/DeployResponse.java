@@ -15,7 +15,7 @@
  */
 package org.xbib.elasticsearch.action.deploy;
 
-import org.elasticsearch.action.support.nodes.NodesOperationResponse;
+import org.elasticsearch.action.support.nodes.BaseNodesResponse;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
@@ -24,7 +24,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-public class DeployResponse extends NodesOperationResponse<DeployNodeResponse> implements ToXContent {
+public class DeployResponse extends BaseNodesResponse<DeployNodeResponse> implements ToXContent {
 
     DeployResponse() {
     }

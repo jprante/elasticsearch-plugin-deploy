@@ -15,9 +15,8 @@
  */
 package org.xbib.elasticsearch.action.deploy;
 
-import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.support.nodes.NodesOperationRequestBuilder;
-import org.elasticsearch.client.ClusterAdminClient;
+import org.elasticsearch.client.ElasticsearchClient;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
 
@@ -25,13 +24,8 @@ import java.io.IOException;
 
 public class DeployRequestBuilder extends NodesOperationRequestBuilder<DeployRequest, DeployResponse, DeployRequestBuilder> {
 
-    public DeployRequestBuilder(ClusterAdminClient clusterClient) {
-        super(clusterClient, new DeployRequest());
-    }
-
-    @Override
-    protected void doExecute(ActionListener<DeployResponse> listener) {
-        client.execute(DeployAction.INSTANCE, request, listener);
+    public DeployRequestBuilder(ElasticsearchClient client) {
+        super(client, DeployAction.INSTANCE, new DeployRequest());
     }
 
     @Override

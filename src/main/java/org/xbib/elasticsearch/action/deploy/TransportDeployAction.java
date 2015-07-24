@@ -17,9 +17,10 @@ package org.xbib.elasticsearch.action.deploy;
 
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.support.ActionFilters;
-import org.elasticsearch.action.support.nodes.TransportNodesOperationAction;
+import org.elasticsearch.action.support.nodes.TransportNodesAction;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.cluster.ClusterService;
+import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.io.Streams;
@@ -39,14 +40,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import static org.elasticsearch.common.collect.Lists.newArrayList;
-import static org.elasticsearch.common.collect.Maps.newHashMap;
-
-public class TransportDeployAction extends TransportNodesOperationAction<DeployRequest, DeployResponse, DeployNodeRequest, DeployNodeResponse> {
+public class TransportDeployAction extends TransportNodesAction<DeployRequest, DeployResponse, DeployNodeRequest, DeployNodeResponse> {
 
     private final Environment environment;
 
@@ -55,27 +55,19 @@ public class TransportDeployAction extends TransportNodesOperationAction<DeployR
     @Inject
     public TransportDeployAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
                                  ClusterService clusterService, TransportService transportService,
-                                 ActionFilters actionFilters,
+                                 ActionFilters actionFilters, IndexNameExpressionResolver indexNameExpressionResolver,
                                  Environment environment,
                                  DeployService deployService) {
-        super(settings, DeployAction.NAME, clusterName, threadPool, clusterService, transportService, actionFilters);
+        super(settings, DeployAction.NAME, clusterName, threadPool, clusterService, transportService,
+                actionFilters, indexNameExpressionResolver, DeployRequest.class, DeployNodeRequest.class,
+                ThreadPool.Names.MANAGEMENT);
         this.environment = environment;
         this.deployService = deployService;
     }
 
     @Override
-    protected String executor() {
-        return ThreadPool.Names.MANAGEMENT;
-    }
-
-    @Override
-    protected DeployRequest newRequest() {
-        return new DeployRequest();
-    }
-
-    @Override
     protected DeployResponse newResponse(DeployRequest request, AtomicReferenceArray nodesResponses) {
-        final List<DeployNodeResponse> nodes = newArrayList();
+        final List<DeployNodeResponse> nodes = new ArrayList<>();
         for (int i = 0; i < nodesResponses.length(); i++) {
             Object resp = nodesResponses.get(i);
             if (resp instanceof DeployNodeResponse) {
@@ -86,13 +78,8 @@ public class TransportDeployAction extends TransportNodesOperationAction<DeployR
     }
 
     @Override
-    protected DeployNodeRequest newNodeRequest() {
-        return new DeployNodeRequest();
-    }
-
-    @Override
     protected DeployNodeRequest newNodeRequest(String nodeId, DeployRequest request) {
-        return new DeployNodeRequest(nodeId, request);
+        return new DeployNodeRequest(request, nodeId);
     }
 
     @Override
@@ -104,7 +91,7 @@ public class TransportDeployAction extends TransportNodesOperationAction<DeployR
     protected DeployNodeResponse nodeOperation(DeployNodeRequest request) throws ElasticsearchException {
         DeployNodeResponse response = new DeployNodeResponse(clusterService.localNode());
         if (request.getRequest().getRead()) {
-            Map<String, Object> m = newHashMap();
+            Map<String, Object> m = new HashMap<>();
             Map<String, Plugin> plugins = deployService.getRegistry().getPlugins();
             for (String key : plugins.keySet()) {
                 m.put(key, plugins.get(key));
@@ -129,7 +116,7 @@ public class TransportDeployAction extends TransportNodesOperationAction<DeployR
         if (content == null || content.length() == 0) {
             throw new ElasticsearchException("no content in request");
         }
-        File dir = new File(environment.pluginsFile(),
+        File dir = new File(environment.pluginsFile().toFile(),
                 DeployPlugin.NAME + File.separator + "plugins" + File.separator + name);
         try {
             if (dir.exists()) {

@@ -15,10 +15,10 @@
  */
 package org.xbib.elasticsearch.action.deploy;
 
-import org.elasticsearch.action.admin.cluster.ClusterAction;
-import org.elasticsearch.client.ClusterAdminClient;
+import org.elasticsearch.action.Action;
+import org.elasticsearch.client.ElasticsearchClient;
 
-public class DeployAction extends ClusterAction<DeployRequest, DeployResponse, DeployRequestBuilder> {
+public class DeployAction extends Action<DeployRequest, DeployResponse, DeployRequestBuilder> {
 
     public static final DeployAction INSTANCE = new DeployAction();
 
@@ -29,7 +29,7 @@ public class DeployAction extends ClusterAction<DeployRequest, DeployResponse, D
     }
 
     @Override
-    public DeployRequestBuilder newRequestBuilder(ClusterAdminClient client) {
+    public DeployRequestBuilder newRequestBuilder(ElasticsearchClient client) {
         return new DeployRequestBuilder(client);
     }
 

@@ -18,8 +18,6 @@ package org.xbib.elasticsearch.plugin.deploy;
 import org.elasticsearch.action.ActionModule;
 import org.elasticsearch.common.component.LifecycleComponent;
 import org.elasticsearch.common.inject.Module;
-import org.elasticsearch.common.logging.ESLogger;
-import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.plugins.AbstractPlugin;
 import org.elasticsearch.rest.RestModule;
@@ -29,16 +27,13 @@ import org.xbib.elasticsearch.module.deploy.DeployModule;
 import org.xbib.elasticsearch.module.deploy.DeployService;
 import org.xbib.elasticsearch.rest.deploy.RestDeployAction;
 
+import java.util.ArrayList;
 import java.util.Collection;
-
-import static org.elasticsearch.common.collect.Lists.newArrayList;
 
 /**
  * The deploy plugin is initialized at node startup by Elasticsearch
  */
 public class DeployPlugin extends AbstractPlugin {
-
-    private final static ESLogger logger = ESLoggerFactory.getLogger(DeployPlugin.class.getName());
 
     public final static String NAME = "deploy";
 
@@ -50,7 +45,9 @@ public class DeployPlugin extends AbstractPlugin {
 
     @Override
     public String name() {
-        return NAME;
+        return NAME + "-" + Build.getInstance().getVersion()
+                + "-" + Build.getInstance().getShortHash()
+                + " " + Build.getInstance().getPlatform();
     }
 
     @Override
@@ -60,7 +57,7 @@ public class DeployPlugin extends AbstractPlugin {
 
     @Override
     public Collection<Class<? extends Module>> modules() {
-        Collection<Class<? extends Module>> modules = newArrayList();
+        Collection<Class<? extends Module>> modules = new ArrayList<>();
         if (settings.getAsBoolean("plugins.deploy.enabled", true)) {
             modules.add(DeployModule.class);
         }
@@ -69,7 +66,7 @@ public class DeployPlugin extends AbstractPlugin {
 
     @Override
     public Collection<Class<? extends LifecycleComponent>> services() {
-        Collection<Class<? extends LifecycleComponent>> services = newArrayList();
+        Collection<Class<? extends LifecycleComponent>> services = new ArrayList<>();
         if (settings.getAsBoolean("plugins.deploy.enabled", true)) {
             services.add(DeployService.class);
         }

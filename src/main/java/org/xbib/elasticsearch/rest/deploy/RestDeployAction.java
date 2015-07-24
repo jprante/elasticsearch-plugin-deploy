@@ -15,7 +15,6 @@
  */
 package org.xbib.elasticsearch.rest.deploy;
 
-import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
@@ -107,7 +106,7 @@ public class RestDeployAction extends BaseRestHandler {
             try {
                 String name = request.param("name");
                 if (name == null) {
-                    throw new ElasticsearchIllegalArgumentException("no name given");
+                    throw new IllegalArgumentException("no name given");
                 }
                 BytesReference content =  request.content();
                 String contentType = request.header("Accept");

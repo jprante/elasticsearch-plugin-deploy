@@ -15,20 +15,21 @@
  */
 package org.xbib.elasticsearch.action.deploy;
 
-import org.elasticsearch.action.support.nodes.NodeOperationRequest;
+import org.elasticsearch.action.support.nodes.BaseNodeRequest;
+import org.elasticsearch.action.support.nodes.BaseNodesRequest;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 
 import java.io.IOException;
 
-public class DeployNodeRequest extends NodeOperationRequest {
+public class DeployNodeRequest extends BaseNodeRequest {
 
     private DeployRequest request;
 
     DeployNodeRequest() {
     }
 
-    DeployNodeRequest(String nodeId, DeployRequest request) {
+    DeployNodeRequest(DeployRequest request, String nodeId) {
         super(request, nodeId);
         this.request = request;
     }

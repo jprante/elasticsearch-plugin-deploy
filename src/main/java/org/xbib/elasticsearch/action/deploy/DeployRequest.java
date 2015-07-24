@@ -15,7 +15,7 @@
  */
 package org.xbib.elasticsearch.action.deploy;
 
-import org.elasticsearch.action.support.nodes.NodesOperationRequest;
+import org.elasticsearch.action.support.nodes.BaseNodesRequest;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.io.Streams;
 import org.elasticsearch.common.io.stream.BytesStreamOutput;
@@ -32,7 +32,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-public class DeployRequest extends NodesOperationRequest<DeployRequest> {
+public class DeployRequest extends BaseNodesRequest<DeployRequest> {
 
     private final ESLogger logger = ESLoggerFactory.getLogger(DeployRequest.class.getSimpleName());
 

@@ -7,7 +7,7 @@
 
     <groupId>org.xbib.elasticsearch.plugin</groupId>
     <artifactId>elasticsearch-plugin-deploy</artifactId>
-    <version>1.5.2.0</version>
+    <version>2.0.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>elasticsearch-plugin-deploy</name>
@@ -68,7 +68,7 @@
         <github.global.server>github</github.global.server>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.compiler.version>1.8</java.compiler.version>
-        <elasticsearch.version>1.5.2</elasticsearch.version>
+        <elasticsearch.version>2.0.0-beta1-SNAPSHOT</elasticsearch.version>
     </properties>
 
     <dependencies>
@@ -79,6 +79,14 @@
             <version>${elasticsearch.version}</version>
             <type>jar</type>
             <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>4.1.0</version>
+            <type>jar</type>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -112,6 +120,22 @@
                 <version>2.9</version>
             </extension>
         </extensions>
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>plugin-descriptor.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>plugin-descriptor.properties</exclude>
+                </excludes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -141,16 +165,15 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.18.1</version>
                 <configuration>
-                    <skip>true</skip>
                     <includes>
-                        <include>**/*Tests.java</include>
+                        <include>**/*Test.java</include>
                     </includes>
-                    <properties>
+                    <systemProperties>
                         <property>
-                            <name>listener</name>
-                            <value>org.xbib.elasticsearch.test.Listener</value>
+                            <name>path.home</name>
+                            <value>${project.basedir}/target/classes</value>
                         </property>
-                    </properties>
+                    </systemProperties>
                 </configuration>
             </plugin>
             <plugin>
@@ -237,6 +260,23 @@
                         <phase>site</phase>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>buildnumber-maven-plugin</artifactId>
+                <version>1.2</version>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>create</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <doCheck>false</doCheck>
+                    <doUpdate>false</doUpdate>
+                </configuration>
             </plugin>
         </plugins>
     </build>

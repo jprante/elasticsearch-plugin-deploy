@@ -18,9 +18,8 @@ package org.xbib.elasticsearch.module.deploy;
 import org.elasticsearch.common.inject.Injector;
 import org.elasticsearch.plugins.Plugin;
 
+import java.util.HashMap;
 import java.util.Map;
-
-import static org.elasticsearch.common.collect.Maps.newHashMap;
 
 /**
  * Registry for managing plugins
@@ -32,8 +31,8 @@ public class DeployRegistry {
     private final Map<String, Injector> pluginInjectors;
 
     public DeployRegistry() {
-        this.plugins = newHashMap();
-        this.pluginInjectors = newHashMap();
+        this.plugins = new HashMap<>();
+        this.pluginInjectors = new HashMap<>();
     }
 
     public void addPlugin(String name, Plugin plugin, Injector injector) {

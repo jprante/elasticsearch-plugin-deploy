@@ -17,14 +17,12 @@ package org.xbib.elasticsearch.module.deploy;
 
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.common.Strings;
-import org.elasticsearch.common.collect.Lists;
 import org.elasticsearch.common.component.AbstractLifecycleComponent;
 import org.elasticsearch.common.component.LifecycleComponent;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.Injector;
 import org.elasticsearch.common.inject.Module;
 import org.elasticsearch.common.io.Streams;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.node.service.NodeService;
@@ -39,7 +37,10 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -47,10 +48,8 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import static org.elasticsearch.common.collect.Maps.newHashMap;
-import static org.elasticsearch.common.collect.Sets.newHashSet;
 import static org.elasticsearch.common.inject.Modules.createModule;
-import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
+import static org.elasticsearch.common.settings.Settings.settingsBuilder;
 
 /**
  * The DeployService manages the plugin registry
@@ -105,7 +104,7 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
     }
 
     public void initializeInstalledPlugins() throws IOException {
-        File dir = new File(environment.pluginsFile(), DeployPlugin.NAME + File.separator + "plugins");
+        File dir = new File(environment.pluginsFile().toFile(), DeployPlugin.NAME + File.separator + "plugins");
         if (dir.isDirectory()) {
             logger.info("found plugin dir {}", dir.getAbsolutePath());
             File[] plugins = dir.listFiles();
@@ -134,7 +133,7 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
         path = tryUnpackArchive(path);
         // find all jars in archive
         Set<URI> jars = findJars(path);
-        Map<URI, String> pluginClassNames = newHashMap();
+        Map<URI, String> pluginClassNames = new HashMap<>();
         // build class loader, find jar with the es-plugin.properties in it
         for (URI jar : jars) {
             classLoader.addURI(jar);
@@ -257,7 +256,7 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
         // we don't rely on ZipEntry#isDirectory because it might be that there is no explicit dir
         // but the files path do contain dirs, thus they are going to be extracted on sub-folders anyway
         Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
-        Set<String> topLevelDirNames = newHashSet();
+        Set<String> topLevelDirNames = new HashSet<>();
         while (zipEntries.hasMoreElements()) {
             ZipEntry zipEntry = zipEntries.nextElement();
             String zipEntryName = zipEntry.getName().replace('\\', '/');
@@ -276,7 +275,7 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
     }
 
     private Set<URI> findJars(File root) {
-        Set<URI> jars = newHashSet();
+        Set<URI> jars = new HashSet<>();
         File[] list = root.listFiles();
         if (list == null) {
             return jars;
@@ -294,7 +293,7 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
     }
 
     private Injector processModules(Injector injector, Plugin plugin) {
-        List<Module> modules = Lists.newArrayList();
+        List<Module> modules = new ArrayList<>();
         try {
             for (Class<? extends Module> moduleClass : plugin.modules()) {
                 modules.add(createModule(moduleClass, settings));
@@ -322,7 +321,7 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
 
     @SuppressWarnings("unchecked")
     private List<OnModuleReference> findOnModuleReferences(Plugin plugin) {
-        List<OnModuleReference> list = Lists.newArrayList();
+        List<OnModuleReference> list = new ArrayList<>();
         for (Method method : plugin.getClass().getDeclaredMethods()) {
             if (!method.getName().equals("onModule")) {
                 continue;
