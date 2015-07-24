@@ -33,6 +33,12 @@ import org.xbib.elasticsearch.plugin.deploy.DeployPlugin;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -116,7 +122,7 @@ public class TransportDeployAction extends TransportNodesOperationAction<DeployR
         }
         // add .zip suffix if appropriate
         String contentType = request.getRequest().getContentType();
-        if ("application/zip".equals(contentType)) {
+        if ("application/zip".equals(contentType) && !path.endsWith(".zip")) {
             path = path + ".zip";
         }
         BytesReference content = request.getRequest().getContent();
@@ -126,18 +132,22 @@ public class TransportDeployAction extends TransportNodesOperationAction<DeployR
         File dir = new File(environment.pluginsFile(),
                 DeployPlugin.NAME + File.separator + "plugins" + File.separator + name);
         try {
+            if (dir.exists()) {
+                deleteFiles(dir.toPath());
+            }
             if (!dir.mkdirs()) {
-                logger.warn("unable to make directories: {}", dir.getAbsolutePath());
+                logger.warn("unable to make directory: {}", dir.getAbsolutePath());
             }
             // clear directory from previous files
-            dir.delete();
-            File target = new File(dir, new File(path).getName());
-            logger.info("target is {}", target.getAbsolutePath());
-            FileOutputStream out = new FileOutputStream(target);
+            File targetFile = new File(dir, new File(path).getName());
+            logger.info("dir={} path={} target={}",
+                    dir.getAbsolutePath(), path,
+                    targetFile.getAbsolutePath());
+            FileOutputStream out = new FileOutputStream(targetFile);
             Streams.copy(content.streamInput(), out);
             out.close();
-            logger.info("received {} bytes", target.length());
-            deployService.add(name, target.getAbsoluteFile());
+            logger.info("received {} bytes", targetFile.length());
+            deployService.add(name, targetFile.getAbsoluteFile());
             logger.info("{} deployed", name);
             response.setSuccess(true);
         } catch (Exception e) {
@@ -151,4 +161,19 @@ public class TransportDeployAction extends TransportNodesOperationAction<DeployR
         return true;
     }
 
+    private void deleteFiles(Path directory) throws IOException {
+        Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
 }

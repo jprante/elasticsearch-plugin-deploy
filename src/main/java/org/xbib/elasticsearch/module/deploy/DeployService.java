@@ -24,6 +24,7 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.Injector;
 import org.elasticsearch.common.inject.Module;
 import org.elasticsearch.common.io.Streams;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.node.service.NodeService;
@@ -49,6 +50,7 @@ import java.util.zip.ZipFile;
 import static org.elasticsearch.common.collect.Maps.newHashMap;
 import static org.elasticsearch.common.collect.Sets.newHashSet;
 import static org.elasticsearch.common.inject.Modules.createModule;
+import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
 
 /**
  * The DeployService manages the plugin registry
@@ -165,8 +167,9 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
             }
             logger.info("instantiating plugin {}", name);
             Plugin plugin = instantiatePluginClass(entries.getValue(), classLoader);
+            logger.info("processing modules for plugin {}", name);
             Injector injector = processModules(this.injector, plugin);
-            logger.info("modules added for plugin {}", name);
+            logger.info("modules processed for plugin {}, starting services...", name);
             startServices(injector, plugin, settings, classLoader, entries.getKey().toURL());
             logger.info("services started for plugin {}", name);
             registry.addPlugin(name, plugin, injector);
@@ -181,7 +184,15 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
         try {
             Class<? extends Plugin> cl = (Class<? extends Plugin>) classLoader.loadClass(className);
             try {
-                return cl.getConstructor(Settings.class).newInstance(settings);
+                // add custom settings from plugin
+                // add custom settings from elasticsearch.yml
+                Settings customSettings = settingsBuilder()
+                        .put(settings)
+                        .classLoader(classLoader)
+                        .loadFromClasspath("elasticsearch.yml")
+                        .build();
+                logger.info("custom settings = {}", customSettings.getAsMap());
+                return cl.getConstructor(Settings.class).newInstance(customSettings);
             } catch (NoSuchMethodException e) {
                 try {
                     return cl.getConstructor().newInstance();
@@ -192,6 +203,7 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
                 }
             }
         } catch (Throwable e) {
+            logger.error(e.getMessage(), e);
             throw new ElasticsearchException("Failed to load plugin class [" + className + "]", e);
         }
     }
@@ -283,23 +295,27 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
 
     private Injector processModules(Injector injector, Plugin plugin) {
         List<Module> modules = Lists.newArrayList();
-        for (Class<? extends Module> moduleClass : plugin.modules()) {
-            modules.add(createModule(moduleClass, settings));
-        }
-        for (Module module : modules) {
-            plugin.processModule(module);
-            List<OnModuleReference> references = findOnModuleReferences(plugin);
-            if (references != null) {
-                for (OnModuleReference reference : references) {
-                    if (reference.moduleClass.isAssignableFrom(module.getClass())) {
-                        try {
-                            reference.onModuleMethod.invoke(plugin, module);
-                        } catch (Exception e) {
-                            logger.warn("plugin {} failed to invoke custom onModule method", e, plugin.name());
+        try {
+            for (Class<? extends Module> moduleClass : plugin.modules()) {
+                modules.add(createModule(moduleClass, settings));
+            }
+            for (Module module : modules) {
+                plugin.processModule(module);
+                List<OnModuleReference> references = findOnModuleReferences(plugin);
+                if (references != null) {
+                    for (OnModuleReference reference : references) {
+                        if (reference.moduleClass.isAssignableFrom(module.getClass())) {
+                            try {
+                                reference.onModuleMethod.invoke(plugin, module);
+                            } catch (Exception e) {
+                                logger.warn("plugin {} failed to invoke custom onModule method", e, plugin.name());
+                            }
                         }
                     }
                 }
             }
+        } catch (Throwable t) {
+            logger.error(t.getMessage(), t);
         }
         return injector.createChildInjector(modules);
     }
@@ -341,14 +357,22 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
         }
     }
 
-    private void startServices(Injector injector, Plugin plugin, Settings settings, ClassLoader classLoader, URL url) throws IOException {
+    private void startServices(Injector injector, Plugin plugin, Settings settings, ClassLoader classLoader, URL url)
+            throws IOException {
         for (Class<? extends LifecycleComponent> service : plugin.services()) {
             logger.info("found service {} {} to start", service, service.getClass());
             LifecycleComponent t = injector.getInstance(service);
             if (t instanceof DeployableComponent) {
                 DeployableComponent component = (DeployableComponent) t;
                 logger.info("before init component {}", component);
-                component.init(settings, classLoader, url);
+                // add custom settings from elasticsearch.yml
+                Settings customSettings = settingsBuilder()
+                        .put(settings)
+                        .classLoader(classLoader)
+                        .loadFromClasspath("elasticsearch.yml")
+                        .build();
+                logger.info("custom settings = {}", customSettings.getAsMap());
+                component.init(customSettings, classLoader, url);
                 logger.info("after component {}", component);
             }
             logger.info("starting service {}", service);
