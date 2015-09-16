@@ -5,7 +5,6 @@ import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
 import org.elasticsearch.client.support.AbstractClient;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.ESLoggerFactory;
-import org.elasticsearch.common.network.NetworkUtils;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.node.Node;
@@ -14,6 +13,7 @@ import org.junit.Before;
 import org.xbib.elasticsearch.plugin.deploy.DeployPlugin;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,7 +39,7 @@ public abstract class AbstractNodeTestHelper {
 
     protected void setClusterName() {
         this.cluster = "test-deploy-cluster-"
-                + NetworkUtils.getLocalAddress().getHostName()
+                + getLocalAddress().getHostName()
                 + "-" + System.getProperty("user.name")
                 + "-" + counter.incrementAndGet();
     }
@@ -106,9 +106,7 @@ public abstract class AbstractNodeTestHelper {
     }
 
     private Node buildNode(String id) {
-        String settingsSource = getClass().getName().replace('.', '/') + ".yml";
         Settings finalSettings = settingsBuilder()
-                .loadFromClasspath(settingsSource)
                 .put(getNodeSettings())
                 .put("name", id)
                 .build();
@@ -148,5 +146,22 @@ public abstract class AbstractNodeTestHelper {
         nodes.clear();
         logger.info("all nodes closed");
     }
+
+    private final static InetAddress localAddress;
+
+    static {
+        InetAddress address;
+        try {
+            address = InetAddress.getLocalHost();
+        } catch (Throwable e) {
+            address = InetAddress.getLoopbackAddress();
+        }
+        localAddress = address;
+    }
+
+    public static InetAddress getLocalAddress() {
+        return localAddress;
+    }
+
 
 }

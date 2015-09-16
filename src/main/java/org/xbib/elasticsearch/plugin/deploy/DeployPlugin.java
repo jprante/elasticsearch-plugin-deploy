@@ -19,7 +19,7 @@ import org.elasticsearch.action.ActionModule;
 import org.elasticsearch.common.component.LifecycleComponent;
 import org.elasticsearch.common.inject.Module;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.plugins.AbstractPlugin;
+import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.rest.RestModule;
 import org.xbib.elasticsearch.action.deploy.DeployAction;
 import org.xbib.elasticsearch.action.deploy.TransportDeployAction;
@@ -33,7 +33,7 @@ import java.util.Collection;
 /**
  * The deploy plugin is initialized at node startup by Elasticsearch
  */
-public class DeployPlugin extends AbstractPlugin {
+public class DeployPlugin extends Plugin {
 
     public final static String NAME = "deploy";
 
@@ -56,16 +56,16 @@ public class DeployPlugin extends AbstractPlugin {
     }
 
     @Override
-    public Collection<Class<? extends Module>> modules() {
-        Collection<Class<? extends Module>> modules = new ArrayList<>();
+    public Collection<Module> nodeModules() {
+        Collection<Module> modules = new ArrayList<>();
         if (settings.getAsBoolean("plugins.deploy.enabled", true)) {
-            modules.add(DeployModule.class);
+            modules.add(new DeployModule());
         }
         return modules;
     }
 
     @Override
-    public Collection<Class<? extends LifecycleComponent>> services() {
+    public Collection<Class<? extends LifecycleComponent>> nodeServices() {
         Collection<Class<? extends LifecycleComponent>> services = new ArrayList<>();
         if (settings.getAsBoolean("plugins.deploy.enabled", true)) {
             services.add(DeployService.class);

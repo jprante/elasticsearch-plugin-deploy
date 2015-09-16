@@ -23,6 +23,7 @@ import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
+import org.elasticsearch.common.inject.Injector;
 import org.elasticsearch.common.io.Streams;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
@@ -50,19 +51,19 @@ public class TransportDeployAction extends TransportNodesAction<DeployRequest, D
 
     private final Environment environment;
 
-    private final DeployService deployService;
+    private final Injector injector;
 
     @Inject
     public TransportDeployAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
                                  ClusterService clusterService, TransportService transportService,
                                  ActionFilters actionFilters, IndexNameExpressionResolver indexNameExpressionResolver,
                                  Environment environment,
-                                 DeployService deployService) {
+                                 Injector injector) {
         super(settings, DeployAction.NAME, clusterName, threadPool, clusterService, transportService,
                 actionFilters, indexNameExpressionResolver, DeployRequest.class, DeployNodeRequest.class,
                 ThreadPool.Names.MANAGEMENT);
         this.environment = environment;
-        this.deployService = deployService;
+        this.injector = injector;
     }
 
     @Override
@@ -89,6 +90,7 @@ public class TransportDeployAction extends TransportNodesAction<DeployRequest, D
 
     @Override
     protected DeployNodeResponse nodeOperation(DeployNodeRequest request) throws ElasticsearchException {
+        DeployService deployService = injector.getInstance(DeployService.class);
         DeployNodeResponse response = new DeployNodeResponse(clusterService.localNode());
         if (request.getRequest().getRead()) {
             Map<String, Object> m = new HashMap<>();

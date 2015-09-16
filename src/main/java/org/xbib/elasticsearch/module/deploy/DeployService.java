@@ -31,6 +31,7 @@ import org.xbib.classloader.uri.URIClassLoader;
 import org.xbib.elasticsearch.plugin.deploy.DeployPlugin;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,7 +49,6 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import static org.elasticsearch.common.inject.Modules.createModule;
 import static org.elasticsearch.common.settings.Settings.settingsBuilder;
 
 /**
@@ -62,19 +62,18 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
 
     private final NodeService nodeService;
 
-    private final URIClassLoader deployClassLoader;
+    private final ClassLoader deployClassLoader;
 
     private final DeployRegistry registry;
 
     @Inject
-    public DeployService(Settings settings, Environment environment, Injector injector,
-                         NodeService nodeService,
+    public DeployService(Settings settings, Environment environment, Injector injector, NodeService nodeService,
                          DeployRegistry registry) {
         super(settings);
         this.injector = injector;
         this.environment = environment;
         this.nodeService = nodeService;
-        this.deployClassLoader = new URIClassLoader(settings.getClass().getClassLoader());
+        this.deployClassLoader = getClass().getClassLoader();
         this.registry = registry;
     }
 
@@ -133,46 +132,50 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
         path = tryUnpackArchive(path);
         // find all jars in archive
         Set<URI> jars = findJars(path);
+        File descriptor = new File(path, "plugin-descriptor.properties");
+        InputStream in = new FileInputStream(descriptor);
+        Properties properties = new Properties();
+        properties.load(in);
+        String classname = properties.getProperty("classname");
+        logger.debug("classname={} jars={}", classname, jars);
         Map<URI, String> pluginClassNames = new HashMap<>();
-        // build class loader, find jar with the es-plugin.properties in it
-        for (URI jar : jars) {
-            classLoader.addURI(jar);
-            URIClassLoader tmp = new URIClassLoader(deployClassLoader);
-            tmp.addURI(jar);
-            Enumeration<URL> urls = tmp.findResources("es-plugin.properties");
-            while (urls.hasMoreElements()) {
-                URL url = urls.nextElement();
-                if (!pluginClassNames.containsKey(jar)) {
-                    Properties props = new Properties();
-                    InputStream in = url.openStream();
-                    props.load(in);
-                    in.close();
-                    pluginClassNames.put(jar, props.getProperty("plugin"));
+            for (URI jar : jars) {
+                classLoader.addURI(jar);
+                try {
+                    classLoader.loadClass(classname);
+                    pluginClassNames.put(jar, classname);
+                    logger.debug("found classname in {}", jar);
+                } catch (ClassNotFoundException e) {
+                    // skip, next jar, do nothing
                 }
             }
-        }
-        for (URI uri : classLoader.getURIs()) {
-            logger.info("class path member {}", uri);
-        }
-        // instantiate all plugins in this path, add them to registry
-        for (Map.Entry<URI, String> entries : pluginClassNames.entrySet()) {
-            // check for existing plugin
-            if (registry.getPlugin(name) != null) {
-                logger.warn("old plugin {} exists", name);
-                Plugin oldPlugin = registry.getPlugin(name);
-                stopServices(registry.getInjector(name), oldPlugin);
-                logger.info("services stopped for plugin {}", name);
-                registry.removePlugin(name);
+            for (URI uri : classLoader.getURIs()) {
+                logger.info("class path member {}", uri);
             }
-            logger.info("instantiating plugin {}", name);
-            Plugin plugin = instantiatePluginClass(entries.getValue(), classLoader);
-            logger.info("processing modules for plugin {}", name);
-            Injector injector = processModules(this.injector, plugin);
-            logger.info("modules processed for plugin {}, starting services...", name);
-            startServices(injector, plugin, settings, classLoader, entries.getKey().toURL());
-            logger.info("services started for plugin {}", name);
-            registry.addPlugin(name, plugin, injector);
-        }
+            // instantiate all plugins in this path, add them to registry
+            for (Map.Entry<URI, String> entries : pluginClassNames.entrySet()) {
+                // check for existing plugin
+                if (registry.getPlugin(name) != null) {
+                    logger.warn("old plugin {} exists", name);
+                    Plugin oldPlugin = registry.getPlugin(name);
+                    stopServices(registry.getInjector(name), oldPlugin);
+                    logger.info("services stopped for plugin {}", name);
+                    registry.removePlugin(name);
+                }
+                logger.info("instantiating plugin {}", name);
+                Plugin plugin = instantiatePluginClass(entries.getValue(), classLoader);
+                logger.info("processing modules for plugin {}", name);
+                Injector injector = null;
+                try {
+                    injector = processModules(this.injector, plugin);
+                    logger.info("modules processed for plugin {}, starting services...", name);
+                    startServices(injector, plugin, settings, classLoader, entries.getKey().toURL());
+                    logger.info("services started for plugin {}", name);
+                } catch (Throwable t) {
+                    logger.warn(t.getMessage(), t);
+                }
+                registry.addPlugin(name, plugin, injector);
+            }
         logger.info("registry after adding = {}", registry);
         nodeService.putAttribute("plugins",
                 Strings.collectionToCommaDelimitedString(registry.getPlugins().keySet()));
@@ -185,13 +188,17 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
             try {
                 // add custom settings from plugin
                 // add custom settings from elasticsearch.yml
-                Settings customSettings = settingsBuilder()
-                        .put(settings)
-                        .classLoader(classLoader)
-                        .loadFromClasspath("elasticsearch.yml")
-                        .build();
-                logger.info("custom settings = {}", customSettings.getAsMap());
-                return cl.getConstructor(Settings.class).newInstance(customSettings);
+                URL url = classLoader.getResource("elasticsearch.yml");
+                if (url != null) {
+                    Settings customSettings = settingsBuilder()
+                            .put(settings)
+                            .loadFromStream("elasticsearch.yml", url.openStream())
+                            .build();
+                    logger.info("custom settings = {}", customSettings.getAsMap());
+                    return cl.getConstructor(Settings.class).newInstance(customSettings);
+                } else {
+                    return cl.getConstructor(Settings.class).newInstance(settings);
+                }
             } catch (NoSuchMethodException e) {
                 try {
                     return cl.getConstructor().newInstance();
@@ -233,6 +240,10 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
                     zipEntryName = zipEntryName.substring(zipEntryName.indexOf('/'));
                 }
                 File target = new File(file.getParent(), zipEntryName);
+                File parent = target.getParentFile();
+                if (!parent.exists()) {
+                    parent.mkdirs();
+                }
                 Streams.copy(zipFile.getInputStream(zipEntry), new FileOutputStream(target));
             }
             return file.getParentFile();
@@ -295,11 +306,10 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
     private Injector processModules(Injector injector, Plugin plugin) {
         List<Module> modules = new ArrayList<>();
         try {
-            for (Class<? extends Module> moduleClass : plugin.modules()) {
-                modules.add(createModule(moduleClass, settings));
+            for (Module module : plugin.nodeModules()) {
+                modules.add(module);
             }
             for (Module module : modules) {
-                plugin.processModule(module);
                 List<OnModuleReference> references = findOnModuleReferences(plugin);
                 if (references != null) {
                     for (OnModuleReference reference : references) {
@@ -358,21 +368,23 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
 
     private void startServices(Injector injector, Plugin plugin, Settings settings, ClassLoader classLoader, URL url)
             throws IOException {
-        for (Class<? extends LifecycleComponent> service : plugin.services()) {
+        for (Class<? extends LifecycleComponent> service : plugin.nodeServices()) {
             logger.info("found service {} {} to start", service, service.getClass());
             LifecycleComponent t = injector.getInstance(service);
             if (t instanceof DeployableComponent) {
                 DeployableComponent component = (DeployableComponent) t;
                 logger.info("before init component {}", component);
                 // add custom settings from elasticsearch.yml
-                Settings customSettings = settingsBuilder()
-                        .put(settings)
-                        .classLoader(classLoader)
-                        .loadFromClasspath("elasticsearch.yml")
-                        .build();
-                logger.info("custom settings = {}", customSettings.getAsMap());
-                component.init(customSettings, classLoader, url);
-                logger.info("after component {}", component);
+                URL settingsUrl = classLoader.getResource("elasticsearch.yml");
+                if (settingsUrl != null) {
+                    Settings customSettings = settingsBuilder()
+                            .put(settings)
+                            .loadFromStream("elasticsearch.yml", settingsUrl.openStream())
+                            .build();
+                    logger.info("custom settings = {}", customSettings.getAsMap());
+                    component.init(customSettings, classLoader, url);
+                    logger.info("after component {}", component);
+                }
             }
             logger.info("starting service {}", service);
             t.start();
@@ -381,7 +393,7 @@ public class DeployService extends AbstractLifecycleComponent<DeployService> imp
     }
 
     private void stopServices(Injector injector, Plugin plugin) {
-        for (Class<? extends LifecycleComponent> service : plugin.services()) {
+        for (Class<? extends LifecycleComponent> service : plugin.nodeServices()) {
             logger.info("found service {} {} to stop", service, service.getClass());
             injector.getInstance(service).stop();
             logger.info("service {} stopped", service);
