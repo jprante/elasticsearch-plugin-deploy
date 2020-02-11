@@ -54,7 +54,7 @@
     <repositories>
         <repository>
             <id>xbib</id>
-            <url>http://xbib.org/repository</url>
+            <url>https://xbib.org/repository</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
