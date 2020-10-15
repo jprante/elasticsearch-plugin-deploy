@@ -1,3 +1,6 @@
+:warning: **This repository will be removed soon without any further notice**
+
+
 ![Reload](https://github.com/jprante/elasticsearch-plugin-deploy/raw/master/src/site/resources/Reload_icon.svg.png)
 
 Image by [Wikimedia](http://commons.wikimedia.org/wiki/File:Reload_icon.svg)
